@@ -1,7 +1,9 @@
 import { useState } from "react";
 import "./App.css";
 
-const API_URL = "http://127.0.0.1:8000/api/chat";
+// Render backend URL
+const API_URL =
+  "https://prakharkishore-portfolio-ai.onrender.com/api/chat";
 
 const suggestedQuestions = [
   "Where did Prakhar work as a Research Intern?",
@@ -22,7 +24,7 @@ function App() {
       return;
     }
 
-    // Add user's message
+    // Add user message
     setMessages((prev) => [
       ...prev,
       {
@@ -46,12 +48,12 @@ function App() {
       });
 
       if (!response.ok) {
-        throw new Error("Server error");
+        throw new Error(`Server error: ${response.status}`);
       }
 
       const data = await response.json();
 
-      // Add AI response + sources
+      // Add AI response
       setMessages((prev) => [
         ...prev,
         {
