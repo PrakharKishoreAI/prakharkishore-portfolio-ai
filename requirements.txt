@@ -2,8 +2,5 @@ fastapi
 uvicorn
 groq
 httpx
-sentence-transformers
-faiss-cpu
-pypdf
 PyMuPDF
 python-dotenv

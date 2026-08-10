@@ -1,68 +1,40 @@
-# ============================================================
-# Prakhar Portfolio AI - RAG Service
-# Resume PDF + Portfolio TXT + FAISS + Groq
-# With source-aware retrieval
-# ============================================================
-
 import os
-import fitz
-import numpy as np
-import faiss
+import re
+import math
+from collections import Counter
 
-from sentence_transformers import SentenceTransformer
+import fitz
 from groq import Groq
 
 
 # ============================================================
-# 1. SETTINGS
+# SETTINGS
 # ============================================================
 
 PDF_PATH = "data/resume.pdf"
 PORTFOLIO_PATH = "data/portfolio.txt"
 
-EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 GROQ_MODEL = "llama-3.3-70b-versatile"
-
 TOP_K = 5
 
 
 # ============================================================
-# 2. GROQ API
+# GROQ
 # ============================================================
 
 groq_api_key = os.environ.get("GROQ_API_KEY")
 
 if not groq_api_key:
-    raise ValueError(
-        "GROQ_API_KEY not found. "
-        "Please set your Groq API key in the terminal."
-    )
+    raise ValueError("GROQ_API_KEY not found.")
 
 client = Groq(api_key=groq_api_key)
 
 
 # ============================================================
-# 3. LOAD EMBEDDING MODEL
-# ============================================================
-
-print("\n" + "=" * 60)
-print("LOADING EMBEDDING MODEL")
-print("=" * 60)
-
-embedding_model = SentenceTransformer(EMBEDDING_MODEL)
-
-print("Embedding model loaded successfully.")
-
-
-# ============================================================
-# 4. READ RESUME PDF
+# READ PDF
 # ============================================================
 
 def read_pdf(path):
-    """
-    Extract text from resume PDF.
-    """
-
     if not os.path.exists(path):
         print(f"WARNING: PDF not found: {path}")
         return ""
@@ -82,14 +54,10 @@ def read_pdf(path):
 
 
 # ============================================================
-# 5. READ PORTFOLIO TXT
+# READ PORTFOLIO
 # ============================================================
 
 def read_portfolio(path):
-    """
-    Read portfolio information from portfolio.txt.
-    """
-
     if not os.path.exists(path):
         print(f"WARNING: Portfolio file not found: {path}")
         return ""
@@ -101,13 +69,10 @@ def read_portfolio(path):
 
 
 # ============================================================
-# 6. TEXT CHUNKING
+# CHUNKING
 # ============================================================
 
 def create_chunks(text, source, chunk_size=700, overlap=100):
-    """
-    Split text into smaller chunks and keep source information.
-    """
 
     text = text.strip()
 
@@ -125,12 +90,10 @@ def create_chunks(text, source, chunk_size=700, overlap=100):
         chunk = text[start:end]
 
         if chunk.strip():
-            chunks.append(
-                {
-                    "text": chunk.strip(),
-                    "source": source
-                }
-            )
+            chunks.append({
+                "text": chunk.strip(),
+                "source": source
+            })
 
         start += chunk_size - overlap
 
@@ -138,7 +101,155 @@ def create_chunks(text, source, chunk_size=700, overlap=100):
 
 
 # ============================================================
-# 7. LOAD KNOWLEDGE BASE
+# LIGHTWEIGHT TOKENIZER
+# ============================================================
+
+def tokenize(text):
+
+    words = re.findall(r"[a-zA-Z0-9]+", text.lower())
+
+    stopwords = {
+        "the", "a", "an", "and", "or", "is",
+        "are", "was", "were", "to", "of", "in",
+        "on", "for", "with", "my", "his", "her",
+        "this", "that", "it", "as", "at", "by",
+        "from", "be", "has", "have", "had"
+    }
+
+    return [
+        word
+        for word in words
+        if word not in stopwords and len(word) > 1
+    ]
+
+
+# ============================================================
+# LIGHTWEIGHT TF-IDF RETRIEVER
+# ============================================================
+
+class LightweightRetriever:
+
+    def __init__(self, chunks):
+
+        self.chunks = chunks
+        self.documents = []
+
+        for chunk in chunks:
+            self.documents.append(
+                tokenize(chunk["text"])
+            )
+
+        self.document_count = len(self.documents)
+
+        self.idf = {}
+
+        document_frequency = Counter()
+
+        for document in self.documents:
+
+            unique_words = set(document)
+
+            for word in unique_words:
+                document_frequency[word] += 1
+
+        for word, frequency in document_frequency.items():
+
+            self.idf[word] = math.log(
+                (self.document_count + 1)
+                / (frequency + 1)
+            ) + 1
+
+        self.vectors = []
+
+        for document in self.documents:
+            self.vectors.append(
+                self.create_vector(document)
+            )
+
+    def create_vector(self, words):
+
+        counts = Counter(words)
+
+        total = len(words)
+
+        if total == 0:
+            return {}
+
+        vector = {}
+
+        for word, count in counts.items():
+
+            if word not in self.idf:
+                continue
+
+            tf = count / total
+
+            vector[word] = tf * self.idf[word]
+
+        return vector
+
+    def similarity(self, vector_a, vector_b):
+
+        if not vector_a or not vector_b:
+            return 0.0
+
+        score = 0.0
+
+        for word, value in vector_a.items():
+
+            if word in vector_b:
+                score += value * vector_b[word]
+
+        magnitude_a = math.sqrt(
+            sum(value * value for value in vector_a.values())
+        )
+
+        magnitude_b = math.sqrt(
+            sum(value * value for value in vector_b.values())
+        )
+
+        if magnitude_a == 0 or magnitude_b == 0:
+            return 0.0
+
+        return score / (magnitude_a * magnitude_b)
+
+    def search(self, query, top_k=5):
+
+        query_words = tokenize(query)
+
+        query_vector = self.create_vector(query_words)
+
+        scores = []
+
+        for index, document_vector in enumerate(self.vectors):
+
+            score = self.similarity(
+                query_vector,
+                document_vector
+            )
+
+            scores.append((score, index))
+
+        scores.sort(
+            key=lambda item: item[0],
+            reverse=True
+        )
+
+        results = []
+
+        for score, index in scores[:top_k]:
+
+            results.append({
+                "text": self.chunks[index]["text"],
+                "source": self.chunks[index]["source"],
+                "score": float(score)
+            })
+
+        return results
+
+
+# ============================================================
+# LOAD KNOWLEDGE BASE
 # ============================================================
 
 print("\n" + "=" * 60)
@@ -152,10 +263,6 @@ print("Resume characters:", len(resume_text))
 print("Portfolio characters:", len(portfolio_text))
 
 
-# ============================================================
-# 8. CREATE SOURCE-AWARE CHUNKS
-# ============================================================
-
 resume_chunks = create_chunks(
     resume_text,
     "Resume PDF"
@@ -168,16 +275,8 @@ portfolio_chunks = create_chunks(
 
 chunks = resume_chunks + portfolio_chunks
 
-print("\nNumber of chunks:", len(chunks))
+print("Number of chunks:", len(chunks))
 
-
-# ============================================================
-# 9. CREATE EMBEDDINGS
-# ============================================================
-
-print("\n" + "=" * 60)
-print("CREATING EMBEDDINGS")
-print("=" * 60)
 
 if not chunks:
     raise ValueError(
@@ -185,101 +284,40 @@ if not chunks:
     )
 
 
-chunk_texts = [
-    chunk["text"]
-    for chunk in chunks
-]
-
-embeddings = embedding_model.encode(
-    chunk_texts,
-    convert_to_numpy=True,
-    show_progress_bar=True
-)
-
-embeddings = np.asarray(
-    embeddings,
-    dtype="float32"
-)
-
-print("Number of embeddings:", len(embeddings))
-print("Embedding size:", embeddings.shape[1])
-
-
 # ============================================================
-# 10. CREATE FAISS INDEX
+# CREATE LIGHTWEIGHT RETRIEVER
 # ============================================================
 
 print("\n" + "=" * 60)
-print("CREATING FAISS INDEX")
+print("CREATING LIGHTWEIGHT RAG RETRIEVER")
 print("=" * 60)
 
-dimension = embeddings.shape[1]
+retriever = LightweightRetriever(chunks)
 
-index = faiss.IndexFlatL2(dimension)
-
-index.add(embeddings)
-
-print("FAISS index created successfully.")
-print("Total vectors:", index.ntotal)
+print("Retriever created successfully.")
+print("Total chunks:", len(chunks))
 
 
 # ============================================================
-# 11. SEARCH RELEVANT INFORMATION
+# SEARCH
 # ============================================================
 
 def search(query, top_k=TOP_K):
-    """
-    Search the knowledge base using semantic similarity.
-    Returns retrieved text + source + similarity distance.
-    """
 
     if not query or not query.strip():
         return []
 
-    query_embedding = embedding_model.encode(
-        [query],
-        convert_to_numpy=True
+    return retriever.search(
+        query,
+        top_k=top_k
     )
-
-    query_embedding = np.asarray(
-        query_embedding,
-        dtype="float32"
-    )
-
-    distances, indices = index.search(
-        query_embedding,
-        min(top_k, len(chunks))
-    )
-
-    results = []
-
-    for distance, idx in zip(
-        distances[0],
-        indices[0]
-    ):
-
-        if idx < 0 or idx >= len(chunks):
-            continue
-
-        results.append(
-            {
-                "text": chunks[idx]["text"],
-                "source": chunks[idx]["source"],
-                "score": float(distance)
-            }
-        )
-
-    return results
 
 
 # ============================================================
-# 12. GENERATE ANSWER USING GROQ
+# GENERATE ANSWER
 # ============================================================
 
 def generate_answer(question, results):
-    """
-    Generate an answer using only retrieved evidence.
-    """
 
     if not results:
         return (
@@ -289,10 +327,7 @@ def generate_answer(question, results):
 
     evidence_parts = []
 
-    for i, result in enumerate(
-        results,
-        start=1
-    ):
+    for i, result in enumerate(results, start=1):
 
         evidence_parts.append(
             f"""
@@ -316,7 +351,7 @@ Rules:
 1. Do not invent information.
 2. Do not use outside knowledge.
 3. If the information is not present in the evidence,
-   say exactly:
+   say:
    "I couldn't find that information in Prakhar's portfolio."
 4. Keep the answer clear, natural and concise.
 5. Do not mention the retrieval process unless asked.
@@ -349,19 +384,14 @@ RETRIEVED EVIDENCE:
         max_tokens=500
     )
 
-    answer = response.choices[0].message.content
-
-    return answer.strip()
+    return response.choices[0].message.content.strip()
 
 
 # ============================================================
-# 13. GET SOURCE INFORMATION
+# SOURCES
 # ============================================================
 
 def get_sources(results):
-    """
-    Return unique sources used for the answer.
-    """
 
     sources = []
 
@@ -375,19 +405,13 @@ def get_sources(results):
     return sources
 
 
-# ============================================================
-# 14. STARTUP INFORMATION
-# ============================================================
-
 print("\n" + "=" * 60)
-print("RAG PIPELINE COMPLETED SUCCESSFULLY")
+print("RAG PIPELINE READY")
 print("=" * 60)
 
 print("Sources:")
 print("1. Resume PDF")
 print("2. Portfolio TXT")
-print("3. Sentence Transformer")
-print("4. FAISS")
-print("5. Groq Llama 3.3 70B")
-
+print("3. Lightweight TF-IDF Retrieval")
+print("4. Groq Llama 3.3 70B")
 print("=" * 60)
