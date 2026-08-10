@@ -1,0 +1,152 @@
+==============================
+PRAKHAR KISHORE - PORTFOLIO
+==============================
+
+PERSONAL INFORMATION
+
+Name: Prakhar Kishore
+
+Education:
+B.Tech in Computer Science and Engineering (CSE)
+Sikkim Manipal Institute of Technology (SMIT)
+
+
+==============================
+MAJOR ACADEMIC PROJECT
+==============================
+
+Title:
+Brain Tumor Detection Using Deep Learning and Explainable AI
+
+Description:
+Prakhar's major academic project focuses on brain tumor detection and classification using Deep Learning and Explainable AI (XAI).
+
+The project uses a Vision Transformer (ViT) model to classify brain MRI images into four classes:
+1. Glioma
+2. Meningioma
+3. Pituitary Tumor
+4. No Tumor
+
+Model:
+Vision Transformer (ViT-B/16)
+
+Dataset:
+Brain MRI image dataset containing 7,200 images.
+
+Training Images:
+5,040
+
+Testing Images:
+2,160
+
+Techniques:
+- Deep Learning
+- Computer Vision
+- Vision Transformer (ViT)
+- Transfer Learning
+- Image Augmentation
+- Explainable AI (XAI)
+- Grad-CAM
+- LIME
+
+Reported Test Accuracy:
+97.36%
+
+K-Fold Cross-Validation:
+5-Fold Cross-Validation
+
+Reported K-Fold Accuracy:
+98.51%
+
+
+==============================
+PERSONAL PROJECT
+==============================
+
+Title:
+HalluciGuard-RAG
+
+Description:
+HalluciGuard-RAG is Prakhar's personal project. It is a hallucination-aware Retrieval-Augmented Generation (RAG) system designed to identify and reduce hallucinations in Large Language Model responses.
+
+Technologies:
+- Python
+- RAG
+- FAISS
+- Sentence Transformers
+- TF-IDF
+- Cosine Similarity
+- Groq API
+- Llama 3.3 70B
+- Large Language Models (LLMs)
+- Hallucination Detection
+
+Architecture:
+The system retrieves relevant information from the portfolio and resume, provides the retrieved context to the LLM, and generates an answer based on the available information.
+
+
+==============================
+RESEARCH INTERNSHIP
+==============================
+
+Role:
+Research Intern
+
+Organization:
+NIT Silchar
+
+Location:
+Silchar, Assam
+
+Area:
+Artificial Intelligence / Machine Learning Research
+
+
+==============================
+OTHER EXPERIENCE
+==============================
+
+Software Intern:
+Hex Softwares Pvt Ltd
+
+Work:
+Worked on Machine Learning projects including:
+- Iris Classification
+- House Price Prediction
+- Data preprocessing pipelines
+
+
+==============================
+SKILLS
+==============================
+
+Programming:
+- Python
+- SQL
+
+Machine Learning:
+- Machine Learning
+- Deep Learning
+- Computer Vision
+- Natural Language Processing
+
+Frameworks and Libraries:
+- PyTorch
+- TensorFlow
+- Scikit-learn
+- Pandas
+- NumPy
+- Matplotlib
+
+Generative AI:
+- RAG
+- LLMs
+- Generative AI
+- Groq
+- FAISS
+- Sentence Transformers
+
+
+==============================
+END OF PORTFOLIO INFORMATION
+==============================
