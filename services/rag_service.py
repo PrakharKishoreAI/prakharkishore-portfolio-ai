@@ -2,6 +2,7 @@ import os
 import re
 import math
 from collections import Counter
+from pathlib import Path
 
 from groq import Groq
 
@@ -10,11 +11,14 @@ from groq import Groq
 # SETTINGS
 # ============================================================
 
-RESUME_PATH = "data/resume.txt"
-PORTFOLIO_PATH = "data/portfolio.txt"
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_DIR = BASE_DIR / "data"
+
+RESUME_PATH = DATA_DIR / "resume.txt"
+PORTFOLIO_PATH = DATA_DIR / "portfolio.txt"
 
 GROQ_MODEL = "llama-3.3-70b-versatile"
-TOP_K = 5
+TOP_K = 8
 
 
 # ============================================================
@@ -34,14 +38,22 @@ client = Groq(api_key=groq_api_key)
 # ============================================================
 
 def read_text_file(path):
-    if not os.path.exists(path):
+
+    path = Path(path)
+
+    if not path.exists():
         print(f"WARNING: File not found: {path}")
         return ""
 
     print(f"Reading file: {path}")
 
-    with open(path, "r", encoding="utf-8") as file:
-        return file.read()
+    try:
+        with open(path, "r", encoding="utf-8") as file:
+            return file.read()
+
+    except Exception as error:
+        print(f"ERROR reading {path}: {error}")
+        return ""
 
 
 # ============================================================
@@ -66,10 +78,13 @@ def create_chunks(text, source, chunk_size=700, overlap=100):
         chunk = text[start:end]
 
         if chunk.strip():
-            chunks.append({
-                "text": chunk.strip(),
-                "source": source
-            })
+
+            chunks.append(
+                {
+                    "text": chunk.strip(),
+                    "source": source
+                }
+            )
 
         start += chunk_size - overlap
 
@@ -82,20 +97,55 @@ def create_chunks(text, source, chunk_size=700, overlap=100):
 
 def tokenize(text):
 
-    words = re.findall(r"[a-zA-Z0-9]+", text.lower())
+    words = re.findall(
+        r"[a-zA-Z0-9]+",
+        text.lower()
+    )
 
     stopwords = {
-        "the", "a", "an", "and", "or", "is",
-        "are", "was", "were", "to", "of", "in",
-        "on", "for", "with", "my", "his", "her",
-        "this", "that", "it", "as", "at", "by",
-        "from", "be", "has", "have", "had"
+        "the",
+        "a",
+        "an",
+        "and",
+        "or",
+        "is",
+        "are",
+        "was",
+        "were",
+        "to",
+        "of",
+        "in",
+        "on",
+        "for",
+        "with",
+        "my",
+        "his",
+        "her",
+        "this",
+        "that",
+        "it",
+        "as",
+        "at",
+        "by",
+        "from",
+        "be",
+        "has",
+        "have",
+        "had",
+        "about",
+        "what",
+        "where",
+        "who",
+        "how",
+        "tell",
+        "me"
     }
 
     return [
         word
         for word in words
-        if word not in stopwords and len(word) > 1
+        if word not in stopwords
+        and len(word) > 1
     ]
 
 
@@ -108,25 +158,38 @@ class LightweightRetriever:
     def __init__(self, chunks):
 
         self.chunks = chunks
+
         self.documents = []
 
         for chunk in chunks:
+
             self.documents.append(
                 tokenize(chunk["text"])
             )
 
-        self.document_count = len(self.documents)
+        self.document_count = len(
+            self.documents
+        )
 
         self.idf = {}
 
         document_frequency = Counter()
+
+        # ----------------------------------------------------
+        # Calculate document frequency
+        # ----------------------------------------------------
 
         for document in self.documents:
 
             unique_words = set(document)
 
             for word in unique_words:
+
                 document_frequency[word] += 1
+
+        # ----------------------------------------------------
+        # Calculate IDF
+        # ----------------------------------------------------
 
         for word, frequency in document_frequency.items():
 
@@ -135,12 +198,22 @@ class LightweightRetriever:
                 / (frequency + 1)
             ) + 1
 
+        # ----------------------------------------------------
+        # Create vectors
+        # ----------------------------------------------------
+
         self.vectors = []
 
         for document in self.documents:
+
             self.vectors.append(
                 self.create_vector(document)
             )
+
+
+    # ========================================================
+    # CREATE VECTOR
+    # ========================================================
 
     def create_vector(self, words):
 
@@ -160,9 +233,16 @@ class LightweightRetriever:
 
             tf = count / total
 
-            vector[word] = tf * self.idf[word]
+            vector[word] = (
+                tf * self.idf[word]
+            )
 
         return vector
+
+
+    # ========================================================
+    # COSINE SIMILARITY
+    # ========================================================
 
     def similarity(self, vector_a, vector_b):
 
@@ -174,37 +254,67 @@ class LightweightRetriever:
         for word, value in vector_a.items():
 
             if word in vector_b:
-                score += value * vector_b[word]
+
+                score += (
+                    value *
+                    vector_b[word]
+                )
 
         magnitude_a = math.sqrt(
-            sum(value * value for value in vector_a.values())
+            sum(
+                value * value
+                for value in vector_a.values()
+            )
         )
 
         magnitude_b = math.sqrt(
-            sum(value * value for value in vector_b.values())
+            sum(
+                value * value
+                for value in vector_b.values()
+            )
         )
 
-        if magnitude_a == 0 or magnitude_b == 0:
+        if (
+            magnitude_a == 0
+            or magnitude_b == 0
+        ):
             return 0.0
 
-        return score / (magnitude_a * magnitude_b)
+        return score / (
+            magnitude_a *
+            magnitude_b
+        )
 
-    def search(self, query, top_k=5):
+
+    # ========================================================
+    # SEARCH
+    # ========================================================
+
+    def search(self, query, top_k=8):
 
         query_words = tokenize(query)
 
-        query_vector = self.create_vector(query_words)
+        query_vector = self.create_vector(
+            query_words
+        )
 
         scores = []
 
-        for index, document_vector in enumerate(self.vectors):
+        for index, document_vector in enumerate(
+            self.vectors
+        ):
 
             score = self.similarity(
                 query_vector,
                 document_vector
             )
 
-            scores.append((score, index))
+            scores.append(
+                (
+                    score,
+                    index
+                )
+            )
 
         scores.sort(
             key=lambda item: item[0],
@@ -215,11 +325,13 @@ class LightweightRetriever:
 
         for score, index in scores[:top_k]:
 
-            results.append({
-                "text": self.chunks[index]["text"],
-                "source": self.chunks[index]["source"],
-                "score": float(score)
-            })
+            results.append(
+                {
+                    "text": self.chunks[index]["text"],
+                    "source": self.chunks[index]["source"],
+                    "score": float(score)
+                }
+            )
 
         return results
 
@@ -232,11 +344,31 @@ print("\n" + "=" * 60)
 print("LOADING KNOWLEDGE BASE")
 print("=" * 60)
 
-resume_text = read_text_file(RESUME_PATH)
-portfolio_text = read_text_file(PORTFOLIO_PATH)
+print(f"Base directory: {BASE_DIR}")
+print(f"Data directory: {DATA_DIR}")
 
-print("Resume characters:", len(resume_text))
-print("Portfolio characters:", len(portfolio_text))
+print(f"Resume path: {RESUME_PATH}")
+print(f"Portfolio path: {PORTFOLIO_PATH}")
+
+
+resume_text = read_text_file(
+    RESUME_PATH
+)
+
+portfolio_text = read_text_file(
+    PORTFOLIO_PATH
+)
+
+
+print(
+    "Resume characters:",
+    len(resume_text)
+)
+
+print(
+    "Portfolio characters:",
+    len(portfolio_text)
+)
 
 
 # ============================================================
@@ -253,31 +385,75 @@ portfolio_chunks = create_chunks(
     "Portfolio TXT"
 )
 
-chunks = resume_chunks + portfolio_chunks
 
-print("Resume chunks:", len(resume_chunks))
-print("Portfolio chunks:", len(portfolio_chunks))
-print("Total chunks:", len(chunks))
+chunks = (
+    resume_chunks +
+    portfolio_chunks
+)
 
+
+print(
+    "Resume chunks:",
+    len(resume_chunks)
+)
+
+print(
+    "Portfolio chunks:",
+    len(portfolio_chunks)
+)
+
+print(
+    "Total chunks:",
+    len(chunks)
+)
+
+
+# ============================================================
+# VALIDATE KNOWLEDGE BASE
+# ============================================================
+
+if not resume_text:
+
+    print(
+        "WARNING: resume.txt is empty or missing."
+    )
+
+if not portfolio_text:
+
+    print(
+        "WARNING: portfolio.txt is empty or missing."
+    )
 
 if not chunks:
+
     raise ValueError(
-        "No text was found in resume.txt or portfolio.txt."
+        "No text was found in resume.txt "
+        "or portfolio.txt."
     )
 
 
 # ============================================================
-# CREATE LIGHTWEIGHT RETRIEVER
+# CREATE LIGHTWEIGHT RAG RETRIEVER
 # ============================================================
 
 print("\n" + "=" * 60)
 print("CREATING LIGHTWEIGHT RAG RETRIEVER")
 print("=" * 60)
 
-retriever = LightweightRetriever(chunks)
 
-print("Retriever created successfully.")
-print("Total chunks:", len(chunks))
+retriever = LightweightRetriever(
+    chunks
+)
+
+
+print(
+    "Retriever created successfully."
+)
+
+print(
+    "Total chunks:",
+    len(chunks)
+)
 
 
 # ============================================================
@@ -287,12 +463,104 @@ print("Total chunks:", len(chunks))
 def search(query, top_k=TOP_K):
 
     if not query or not query.strip():
+
         return []
 
-    return retriever.search(
+    # --------------------------------------------------------
+    # Normal TF-IDF search
+    # --------------------------------------------------------
+
+    results = retriever.search(
         query,
         top_k=top_k
     )
+
+
+    # --------------------------------------------------------
+    # Resume-related keywords
+    # --------------------------------------------------------
+
+    resume_keywords = {
+        "resume",
+        "certificate",
+        "certificates",
+        "certification",
+        "certifications",
+        "education",
+        "degree",
+        "college",
+        "university",
+        "school",
+        "internship",
+        "intern",
+        "experience",
+        "work",
+        "worked",
+        "job",
+        "jobs",
+        "achievement",
+        "achievements",
+        "award",
+        "awards",
+        "course",
+        "courses",
+        "nptel",
+        "coursera",
+        "oracle",
+        "research",
+        "researcher",
+        "researching"
+    }
+
+
+    query_words = set(
+        tokenize(query)
+    )
+
+
+    # --------------------------------------------------------
+    # If question is resume-related,
+    # make sure resume chunks are available.
+    # --------------------------------------------------------
+
+    if query_words.intersection(
+        resume_keywords
+    ):
+
+        resume_results = []
+
+        for chunk in chunks:
+
+            if chunk["source"] == "Resume TXT":
+
+                resume_results.append(
+                    {
+                        "text": chunk["text"],
+                        "source": chunk["source"],
+                        "score": 0.0
+                    }
+                )
+
+
+        existing_text = {
+            result["text"]
+            for result in results
+        }
+
+
+        for result in resume_results:
+
+            if result["text"] not in existing_text:
+
+                results.append(result)
+
+
+        # Keep results manageable
+
+        results = results[:top_k]
+
+
+    return results
 
 
 # ============================================================
@@ -302,14 +570,24 @@ def search(query, top_k=TOP_K):
 def generate_answer(question, results):
 
     if not results:
+
         return (
-            "I couldn't find that information in "
-            "Prakhar's portfolio."
+            "I couldn't find that information "
+            "in Prakhar's portfolio."
         )
+
+
+    # --------------------------------------------------------
+    # Build evidence
+    # --------------------------------------------------------
 
     evidence_parts = []
 
-    for i, result in enumerate(results, start=1):
+
+    for i, result in enumerate(
+        results,
+        start=1
+    ):
 
         evidence_parts.append(
             f"""
@@ -320,7 +598,15 @@ SOURCE: {result["source"]}
 """
         )
 
-    evidence = "\n".join(evidence_parts)
+
+    evidence = "\n".join(
+        evidence_parts
+    )
+
+
+    # --------------------------------------------------------
+    # Prompt
+    # --------------------------------------------------------
 
     prompt = f"""
 You are Prakhar's Portfolio AI assistant.
@@ -333,15 +619,20 @@ Rules:
 1. Do not invent information.
 2. Do not use outside knowledge.
 3. If the information is not present in the evidence,
-   say:
+   say exactly:
    "I couldn't find that information in Prakhar's portfolio."
 4. Keep the answer clear, natural and concise.
-5. Do not mention the retrieval process unless asked.
+5. Do not mention the retrieval process unless the user asks.
 6. Do not confuse personal projects with academic major projects.
-7. If the question is about education, work experience,
-   projects, skills, certifications or achievements,
-   use the Resume TXT and Portfolio TXT evidence.
-8. When useful, combine information from both sources.
+7. For education, work experience, internships,
+   certifications, achievements and skills,
+   use Resume TXT when the information is available there.
+8. For project descriptions, use Portfolio TXT when appropriate.
+9. If useful, combine information from Resume TXT and Portfolio TXT.
+10. Never claim something that is not supported by the evidence.
+11. Answer directly instead of saying "according to the evidence".
+12. If multiple pieces of evidence describe the same thing,
+    combine them into one natural answer.
 
 USER QUESTION:
 {question}
@@ -350,8 +641,15 @@ RETRIEVED EVIDENCE:
 {evidence}
 """
 
+
+    # --------------------------------------------------------
+    # Groq request
+    # --------------------------------------------------------
+
     response = client.chat.completions.create(
+
         model=GROQ_MODEL,
+
         messages=[
             {
                 "role": "system",
@@ -365,11 +663,20 @@ RETRIEVED EVIDENCE:
                 "content": prompt
             }
         ],
+
         temperature=0.2,
+
         max_tokens=500
     )
 
-    return response.choices[0].message.content.strip()
+
+    return (
+        response
+        .choices[0]
+        .message
+        .content
+        .strip()
+    )
 
 
 # ============================================================
@@ -385,9 +692,67 @@ def get_sources(results):
         source = result["source"]
 
         if source not in sources:
+
             sources.append(source)
 
     return sources
+
+
+# ============================================================
+# DEBUG FUNCTION
+# ============================================================
+
+def debug_search(query):
+
+    print("\n" + "=" * 60)
+    print("DEBUG SEARCH")
+    print("=" * 60)
+
+    print(
+        "Query:",
+        query
+    )
+
+    results = search(
+        query,
+        top_k=TOP_K
+    )
+
+
+    print(
+        "Results:",
+        len(results)
+    )
+
+
+    for i, result in enumerate(
+        results,
+        start=1
+    ):
+
+        print("\n" + "-" * 50)
+
+        print(
+            f"RESULT {i}"
+        )
+
+        print(
+            "SOURCE:",
+            result["source"]
+        )
+
+        print(
+            "SCORE:",
+            result["score"]
+        )
+
+        print(
+            "TEXT:",
+            result["text"][:300]
+        )
+
+
+    return results
 
 
 # ============================================================
@@ -403,4 +768,5 @@ print("1. Resume TXT")
 print("2. Portfolio TXT")
 print("3. Lightweight TF-IDF Retrieval")
 print("4. Groq Llama 3.3 70B")
+
 print("=" * 60)
