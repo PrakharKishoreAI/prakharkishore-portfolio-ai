@@ -3,7 +3,6 @@ import re
 import math
 from collections import Counter
 
-import fitz
 from groq import Groq
 
 
@@ -11,7 +10,7 @@ from groq import Groq
 # SETTINGS
 # ============================================================
 
-PDF_PATH = "data/resume.pdf"
+RESUME_PATH = "data/resume.txt"
 PORTFOLIO_PATH = "data/portfolio.txt"
 
 GROQ_MODEL = "llama-3.3-70b-versatile"
@@ -31,38 +30,15 @@ client = Groq(api_key=groq_api_key)
 
 
 # ============================================================
-# READ PDF
+# READ TEXT FILE
 # ============================================================
 
-def read_pdf(path):
+def read_text_file(path):
     if not os.path.exists(path):
-        print(f"WARNING: PDF not found: {path}")
+        print(f"WARNING: File not found: {path}")
         return ""
 
-    print(f"Reading PDF: {path}")
-
-    document = fitz.open(path)
-
-    text = ""
-
-    for page in document:
-        text += page.get_text() + "\n"
-
-    document.close()
-
-    return text
-
-
-# ============================================================
-# READ PORTFOLIO
-# ============================================================
-
-def read_portfolio(path):
-    if not os.path.exists(path):
-        print(f"WARNING: Portfolio file not found: {path}")
-        return ""
-
-    print(f"Reading portfolio: {path}")
+    print(f"Reading file: {path}")
 
     with open(path, "r", encoding="utf-8") as file:
         return file.read()
@@ -256,16 +232,20 @@ print("\n" + "=" * 60)
 print("LOADING KNOWLEDGE BASE")
 print("=" * 60)
 
-resume_text = read_pdf(PDF_PATH)
-portfolio_text = read_portfolio(PORTFOLIO_PATH)
+resume_text = read_text_file(RESUME_PATH)
+portfolio_text = read_text_file(PORTFOLIO_PATH)
 
 print("Resume characters:", len(resume_text))
 print("Portfolio characters:", len(portfolio_text))
 
 
+# ============================================================
+# CREATE CHUNKS
+# ============================================================
+
 resume_chunks = create_chunks(
     resume_text,
-    "Resume PDF"
+    "Resume TXT"
 )
 
 portfolio_chunks = create_chunks(
@@ -275,12 +255,14 @@ portfolio_chunks = create_chunks(
 
 chunks = resume_chunks + portfolio_chunks
 
-print("Number of chunks:", len(chunks))
+print("Resume chunks:", len(resume_chunks))
+print("Portfolio chunks:", len(portfolio_chunks))
+print("Total chunks:", len(chunks))
 
 
 if not chunks:
     raise ValueError(
-        "No text was found in resume.pdf or portfolio.txt."
+        "No text was found in resume.txt or portfolio.txt."
     )
 
 
@@ -355,8 +337,11 @@ Rules:
    "I couldn't find that information in Prakhar's portfolio."
 4. Keep the answer clear, natural and concise.
 5. Do not mention the retrieval process unless asked.
-6. Do not confuse personal projects with academic
-   major projects.
+6. Do not confuse personal projects with academic major projects.
+7. If the question is about education, work experience,
+   projects, skills, certifications or achievements,
+   use the Resume TXT and Portfolio TXT evidence.
+8. When useful, combine information from both sources.
 
 USER QUESTION:
 {question}
@@ -405,12 +390,16 @@ def get_sources(results):
     return sources
 
 
+# ============================================================
+# READY
+# ============================================================
+
 print("\n" + "=" * 60)
 print("RAG PIPELINE READY")
 print("=" * 60)
 
 print("Sources:")
-print("1. Resume PDF")
+print("1. Resume TXT")
 print("2. Portfolio TXT")
 print("3. Lightweight TF-IDF Retrieval")
 print("4. Groq Llama 3.3 70B")

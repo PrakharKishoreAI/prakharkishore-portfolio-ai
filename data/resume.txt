@@ -1,0 +1,68 @@
+PRAKHAR KISHORE
+Phone: 8102802004
+Email: prakharkishore8@gmail.com
+LinkedIn: linkedin.com/in/prakhar-kishore-130b30266
+GitHub: github.com/PrakharKishoreAI
+
+PROFESSIONAL SUMMARY
+Final-year B.Tech CSE student (graduating 2026) with hands-on experience building LLM-powered applications, including Retrieval-Augmented Generation (RAG) pipelines, LangChain-based orchestration, and NLP/deep learning systems. Skilled in Python, FastAPI, vector databases (FAISS), and prompt engineering, with practical exposure to Vision Transformers and explainable AI. Completed research and industry internships in medical imaging AI and ASR transcript processing, using OpenAI, Claude, and Gemini APIs for development and debugging. Seeking an AI Engineering Intern role to build production-focused AI agent and RAG solutions.
+
+TECHNICAL SKILLS
+Languages: Python, C, C++, Java, MySQL, HTML
+LLM & GenAI Frameworks: LangChain, Hugging Face Transformers, OpenAI API, Claude API, Gemini API, Prompt Engineering
+RAG & Vector Databases: FAISS, ChromaDB, Pinecone, Semantic Search, Embeddings, Document Chunking
+AI / ML Concepts: Deep Learning, NLP, Computer Vision, AI Agents, Generative AI, Explainable AI (Grad-CAM), Vision Transformers (ViT), Classification, Regression
+ML Libraries: TensorFlow, Keras, Scikit-learn, XGBoost, NLTK, Gensim, OpenAI Whisper, JiWER, NumPy, Pandas, Matplotlib, Seaborn
+Backend & Deployment: FastAPI, Flask, Streamlit, Docker, REST APIs, Git, GitHub, Linux, Cloud Deployment
+Data Skills: Data Preprocessing, Feature Engineering, EDA, Data Visualization, Model Evaluation (Accuracy, Precision, F1, R2, RMSE)
+Cloud / Other: Oracle Cloud Infrastructure, Speech-to-Text Processing
+
+EXPERIENCE
+Research Intern — Deep Learning & Explainable AI | NIT Silchar
+Jan 2026 – May 2026
+- Developed a ViT-B/16 brain tumor classifier on 7,023 MRI images (4 classes: glioma, meningioma, pituitary, no tumor), achieving 99.94% training accuracy and 98.51% test accuracy with 5-fold cross-validation.
+- Integrated Explainable AI (Grad-CAM and LIME) into the Vision Transformer pipeline, using ChatGPT and Claude AI as auxiliary tools for implementation guidance and debugging while independently developing and validating the overall solution.
+
+Machine Learning Intern | Hex Softwares Pvt. Ltd.
+Nov 2025 – Dec 2025
+- Built an NLP-based Hindi ASR transcript cleanup pipeline using OpenAI Whisper and Python for speech-to-text post-processing.
+- Implemented Hindi number normalization and English word detection for code-mixed Hindi-English speech to improve transcript quality.
+- Reduced WER from 38.5% to 18.2% using JiWER benchmarking, achieving a 52.7% improvement in transcription accuracy.
+- Utilized ChatGPT and Claude AI as auxiliary development tools for implementation guidance and troubleshooting while independently building, integrating, and validating the end-to-end pipeline.
+
+PUBLICATIONS
+A Vision Transformer based Deep Learning Approach for Brain Tumour Classification from MRI: An Explainable AI Framework
+Accepted in International Conference on Computing, Intelligence and Applications (CIACON 2026), 2026 (IEEE Conference Record ID: 70148)
+
+PROJECTS
+AI Research Paper Assistant | LangChain | FAISS | Hugging Face | FastAPI | Streamlit
+- Built a Retrieval-Augmented Generation (RAG) application to answer questions from research papers and PDF documents.
+- Implemented document chunking, embedding generation, and semantic search using FAISS.
+- Integrated LangChain to orchestrate retrieval and LLM response generation, grounding responses in retrieved document context to reduce hallucinations.
+- Developed an interactive Streamlit interface for document upload and conversational Q&A.
+
+Customer Churn Prediction | Python | Scikit-learn | XGBoost | EDA | Deployment Pipeline
+- Designed an end-to-end ML pipeline to predict customer churn for telecom data, enabling proactive identification of high-risk customers.
+- Performed EDA and feature engineering including missing value handling, encoding, and scaling to prepare data for modeling.
+- Compared Logistic Regression, Random Forest, and XGBoost via accuracy, precision, recall, and F1-score; XGBoost delivered optimal results with contract type and tenure as top churn drivers.
+
+YouTube Video Summarizer Using LLM | Python | NLP | LLaMA 3.3 | Groq API | Kaggle
+- Developed an automated YouTube video summarization system extracting transcripts and generating concise, structured summaries using the LLaMA-3.3-70B LLM.
+- Implemented an end-to-end NLP pipeline using pytubefix, regex-based text preprocessing, and Groq API to transform raw captions into actionable insights.
+- Engineered prompt-based summarization to produce Brief Summary, Key Topics, and Main Takeaways, improving content consumption efficiency.
+
+EDUCATION
+Bachelor of Technology — Computer Science Engineering
+Expected Aug 2026
+Sikkim Manipal Institute of Technology, Majitar, Sikkim
+
+CERTIFICATIONS
+- LLM Fundamentals — Hugging Face
+- Cambridge RegTech: AI for Financial Regulation, Risk, and Compliance — University of Cambridge Judge Business School
+- Celonis Foundations — Celonis
+- CS50's Introduction to Programming with Python — Harvard University
+- Machine Learning Training — Internshala
+- Cloud Infrastructure & Generative AI — Oracle
+- Responsible & Safe AI — NPTEL
+- Business Intelligence & Analytics — NPTEL
+- Introduction to Agent Skills — Anthropic
