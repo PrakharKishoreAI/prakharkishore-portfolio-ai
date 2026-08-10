@@ -162,7 +162,6 @@ Create an environment variable:
 
 GROQ_API_KEY=your_groq_api_key
 
-⚠️ Never commit your actual API key to GitHub.
 
 4. Start the FastAPI backend
 uvicorn api.main:app --reload --port 8000
@@ -278,9 +277,6 @@ Feel free to explore the repository and try the live AI portfolio assistant.
 Built with React + FastAPI + RAG + Groq 🚀
 
 
-### One important thing, bro
-
-Your current `portfolio.txt` contains some older technology references such as **FAISS and Sentence Transformers**, while the deployed version was changed to lightweight TF-IDF to solve Render's 512 MB memory limit. 
 
 So **before publishing this README**, I recommend updating those old references in `portfolio.txt` too, so your AI doesn't tell recruiters that this particular deployed application is using FAISS/Sentence Transformers when it isn't.
 
