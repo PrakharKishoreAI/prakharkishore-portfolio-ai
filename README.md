@@ -278,6 +278,3 @@ Built with React + FastAPI + RAG + Groq 🚀
 
 
 
-So **before publishing this README**, I recommend updating those old references in `portfolio.txt` too, so your AI doesn't tell recruiters that this particular deployed application is using FAISS/Sentence Transformers when it isn't.
-
-The README above describes the **actual final deployed architecture**
