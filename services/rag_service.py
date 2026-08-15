@@ -17,10 +17,8 @@ DATA_DIR = BASE_DIR / "data"
 RESUME_PATH = DATA_DIR / "resume.txt"
 PORTFOLIO_PATH = DATA_DIR / "portfolio.txt"
 
-GROQ_MODEL = "llama-3.3-70b-versatile"
+GROQ_MODEL = "openai/gpt-oss-120b"
 TOP_K = 8
-
-
 # ============================================================
 # GROQ
 # ============================================================
@@ -767,6 +765,6 @@ print("Sources:")
 print("1. Resume TXT")
 print("2. Portfolio TXT")
 print("3. Lightweight TF-IDF Retrieval")
-print("4. Groq Llama 3.3 70B")
+print("4. Groq GPT-OSS 120B")
 
 print("=" * 60)
